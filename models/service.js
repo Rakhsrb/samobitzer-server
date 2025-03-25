@@ -10,7 +10,7 @@ const serviceSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    images: [{ type: String }],
+    image: String,
   },
   { timestamps: true }
 );
