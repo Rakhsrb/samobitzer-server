@@ -1,5 +1,11 @@
 import { upload } from "../middlewares/Uploader.js";
 import Project from "../models/project.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getAllProjects = async (req, res) => {
   try {
@@ -9,8 +15,7 @@ export const getAllProjects = async (req, res) => {
       title: titleRegExp,
       category: categoryRegExp,
     })
-      .skip((req.query.pageNum - 1) * req.query.pageSize)
-      .limit(req.query.pageSize);
+    .limit(req.query.pageSize);
     res.status(200).json({ data: projects, total: projects.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -83,12 +88,29 @@ export const updateProject = async (req, res) => {
 
 export const deleteProject = async (req, res) => {
   try {
-    const deleteProject = await Project.findByIdAndDelete(req.params.id);
-    if (!deleteProject) return res.status(404).json({ error: "Не найден!" });
-    res
+    const project = await Project.findById(req.params.id);
+
+    if (!project) return res.status(404).json({ message: "Not found!" });
+    if (project.images && project.images.length > 0) {
+      project.images.forEach((image) => {
+        const slicedImage = image.slice(30);
+        const filePath = path.join(__dirname, "..", "uploads", slicedImage);
+        try {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          } else {
+            console.warn(`File not found: ${filePath}`);
+          }
+        } catch (err) {
+          console.error(`Failed to delete image: ${filePath}`, err);
+        }
+      });
+    }
+    const deletedProduct = await Project.findByIdAndDelete(req.params.id);
+    return res
       .status(200)
-      .json({ message: "New project has been deleted successfully!" });
+      .json({ message: "Project deleted!", deletedProduct });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: error.message });
   }
 };

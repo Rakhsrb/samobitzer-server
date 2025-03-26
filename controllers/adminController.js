@@ -51,7 +51,7 @@ export const LoginToAccount = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: admin._id }, process.env.JWTSECRETKEY, {
+    const token = jwt.sign({ userId: admin._id }, process.env.JWTSECRETKEY, {
       expiresIn: "30d",
     });
 
@@ -96,5 +96,16 @@ export const UpdateAccount = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getUser = async (req, res) => {
+  try {
+    const foundAdmin = await Admin.findById(req.userId);
+    if (!foundAdmin)
+      return res.status(404).json({ message: "Admin not found!" });
+    return res.status(200).json(foundAdmin);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

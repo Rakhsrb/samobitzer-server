@@ -1,5 +1,11 @@
 import { upload } from "../middlewares/Uploader.js";
 import Team from "../models/team.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getAllMembers = async (req, res) => {
   try {
@@ -98,8 +104,24 @@ export const updateTeamate = async (req, res) => {
 export const deleteMember = async (req, res) => {
   try {
     const member = await Team.findByIdAndDelete(req.params.id);
-    if (!member) return res.json({ error: "Teamate not found" });
-  } catch (err) {
-    res.json({ error: err });
+    if (!member) return res.status(404).json({ message: "NOT FOUND!" });
+
+    if (member.image) {
+      const slicedPhoto = member.image.slice(30);
+      const filePath = path.join(__dirname, "..", "uploads", slicedPhoto);
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        } else {
+          console.warn(`File not found: ${filePath}`);
+        }
+      } catch (err) {
+        console.error(`Failed to delete image: ${filePath}`, err);
+      }
+    }
+
+    return res.status(200).json({ message: "Teamate has been deleted!" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };

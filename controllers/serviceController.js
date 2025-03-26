@@ -1,5 +1,11 @@
 import { upload } from "../middlewares/Uploader.js";
 import Service from "../models/service.js";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getAllServices = async (req, res) => {
   try {
@@ -103,10 +109,25 @@ export const updateService = async (req, res) => {
 
 export const deleteService = async (req, res) => {
   try {
-    const deletedService = await Service.findByIdAndDelete(req.params.id);
-    if (!deletedService) return res.status(404).json({ error: "Not found!" });
-    res.status(200).json({ message: "Xizmat o'chirildi!" });
+    const deleteService = await Service.findByIdAndDelete(req.params.id);
+    if (!deleteService) return res.status(404).json({ message: "NOT FOUND!" });
+
+    if (deleteService.image) {
+      const slicedPhoto = deleteService.image.slice(30);
+      const filePath = path.join(__dirname, "..", "uploads", slicedPhoto);
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        } else {
+          console.warn(`File not found: ${filePath}`);
+        }
+      } catch (err) {
+        console.error(`Failed to delete image: ${filePath}`, err);
+      }
+    }
+
+    return res.status(200).json({ message: "Service has been deleted!" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: error.message });
   }
 };
